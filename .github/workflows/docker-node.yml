@@ -9,12 +9,16 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
 
     steps:
+    # 1. Checkout code
     - name: Checkout code
       uses: actions/checkout@v4
 
-   
+    # 2. Log in to GitHub Container Registry
     - name: Log in to GHCR
       uses: docker/login-action@v2
       with:
@@ -22,18 +26,20 @@ jobs:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
 
+    # 3. Build Docker image
     - name: Build Docker image
-      run: docker build -t ghcr.io/${{ github.repository }}/my-node-app:latest .
+      run: docker build -t ghcr.io/${{ github.actor }}/my-node-app:latest .
 
+    # 4. Run container for testing
     - name: Run container for testing
       run: |
-        docker run -d -p 3000:3000 --name test-app ghcr.io/${{ github.repository }}/my-node-app:latest
+        docker run -d -p 3000:3000 --name test-app ghcr.io/${{ github.actor }}/my-node-app:latest
         sleep 5
         curl --fail http://localhost:3000
 
+    # 5. Stop and remove test container
     - name: Stop test container
       run: docker rm -f test-app
 
-
+    # 6. Push Docker image to GHCR
     - name: Push Docker image
-      run: docker push ghcr.io/${{ github.repository }}/my-node-app:latest
